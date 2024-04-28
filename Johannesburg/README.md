@@ -47,7 +47,7 @@ Everything looks similar to the other stack buffer overflow problems up to the t
 
 There is a stack canary at 0x43fd that gets checked at the instruction at address 0x4578. A stack canary is a security mechanism that places a preset value at the top of a function's stack. If the value is modified, the program knows that someone tried to modify memory space that they should not have write access to.
 
-Sometimes the stack canary is dynamically set at runtime. In this case, it is a preset value that doesn't change. All we need to do is include the byte 0x86 at the correct location on the stack. This happens to be byte 18.
+Sometimes the stack canary is dynamically set at runtime. In this case, it is a preset value that doesn't change. All we need to do is include the byte 0x86 at the correct location on the stack. This happens to be byte 18 of the user supplied buffer.
 
 Now we can use the unconditional door unlock interrupt to complete this challenge. You can see our stack set up right before our return from login with the stack canary preserved.
 
