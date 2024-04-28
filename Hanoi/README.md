@@ -1,6 +1,6 @@
 # Hanoi
 ## TLDR
-This program is vulnerable to buffer overflow.  
+This program is vulnerable to a stack buffer overflow.  
 If the byte at address 0x2410 == 0xe7, access will be granted.  
 This byte is the 17th character of user input.  
 
