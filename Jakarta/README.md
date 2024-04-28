@@ -1,5 +1,10 @@
 # Jakarta
 ## TLDR 
+This program is vulnerable to a stack buffer overflow.  
+The return address in the login function can be overwritten with user input.  
+There is an integer underflow at 0x45cc that allows us to read in more than 0x1f bytes to the password buffer.  
+The check on the total size at 0x4600 only looks at the byte, not word. We can bypass this check using a very large password buffer.
+Jump to unlock_door function on return.  
 
 ## Details
 The LockIT Pro b.06  is the first of a new series  of locks. It is
