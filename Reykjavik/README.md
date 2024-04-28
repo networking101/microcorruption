@@ -1,8 +1,8 @@
 # Reykjavik
 ## TLDR
-This program is vulnerable to buffer overflow.  
-If the byte at address 0x2410 == 0xe7, access will be granted.  
-This byte is the 17th character of user input.  
+This program is obfuscated.  
+Use the (dis)assembler to read instructions at address 0x2400.  
+User input is compared to bytes 0x3c28 at address 0x2448.  
 
 ## Details
 The LockIT Pro a.03  is the first of a new series  of locks. It is
@@ -31,19 +31,23 @@ for the password to be recovered on prior versions.  The engineers
 responsible have been sacked.
 
 ## Solution
-Start on login.
+Start on main.
 
-![login](./screenshots/login.png)
+![main](./screenshots/main.png)
 
-The user's input is stored starting at address 0x2400. The I/O Console states that passwords are between 8 and 16 characters but the getsn function will read 0x1c characters.
+There's not much going on in this main function. Actually, there are not many defined instructions in this program at all. Main starts by calling a function called enc. It takes 2 arguments; address 0x2400 for argument 1 and 0xf8 for argument 2.  The enc function looks long and confusing, and I don't really want to spend the time reversing it. However, we see a call to address 0x2400 right after it in main. My guess is the code we actually care about is obfuscated and the enc function will unpack the results at address 0x2400.
 
-The test_password_valid function uses interrupt 0x7d to check the password. We have no way of finding the correct password in program memory.
+The good news is we can set a breakpoint and let the debugger decrypt everything for us. The bad news is we won't have a pretty disassembly at 0x2400.
 
-The result of test_password_valid is checked in the login function. If the check failed (returned 0 in r15), we jump to 0x4552 and compare the byte at 0x2410 to 0xe7. If this byte matches, access is granted.
+Set a breakpoint at address 0x444a and run the program to get executable memory at 0x2400. Copy the memory dump and use the (dis)assembler to see what instructions are executed.
 
-![login2](./screenshots/login2.png)
+[disassembly](disassembly.txt)
 
-We can unlock the door if the 17th byte of our password input is 0xe7.
+As we look through the obfuscated code it seems pretty simple. The only function that gets called is INT (at address 0x2464). The obfuscated function asks for a password and compares it to bytes 0x3c28 at address 0x2448.
+
+![disassembly](./screenshots/disassembly.png)
+
+Don't forget the processor is little endian. We need to provide our answer in reverse byte order.
 
 ## Answer
-Password: (hex) e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7
+Password: (hex) 283c
