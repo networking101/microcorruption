@@ -5,4 +5,4 @@ https://microcorruption.com/
 
 ## Embedded Security CTF
 
-This repositories contains my solutions for each exercise.
+This repository contains my solutions for each exercise.
