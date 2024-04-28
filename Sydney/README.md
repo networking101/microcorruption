@@ -1,8 +1,8 @@
 # Sydney
 ## TLDR
-The password is stored in check_password.
-Instructions compare 2 bytes at a time to user input (little endian order).
-If check_password function returns anything other than 0, access is granted.
+The password is stored in check_password.  
+Instructions compare 2 bytes at a time to user input (little endian order).  
+If check_password function returns anything other than 0, access is granted.  
 
 ## Details
 The LockIT Pro a.02  is the first of a new series  of locks. It is
