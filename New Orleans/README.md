@@ -1,8 +1,8 @@
 # New Orleans
 ## TLDR
-The password is stored in create_password.
-Instructions copy password one byte at a time into address 0x2400.
-Function check_password compares user input to password.
+The password is stored in create_password.  
+Instructions copy password one byte at a time into address 0x2400.  
+Function check_password compares user input to password.  
 
 ## Details
 The LockIT Pro a.01  is the first of a new series  of locks. It is
@@ -27,7 +27,7 @@ should be connected.
 This is Software Revision 01.
 
 ## Solution
-Start on main. The first called is <create_password>. Stepping into this function, we see 9 mov instructions that copy bytes starting at address 0x2400.
+Start on main. The first function called is <create_password>. Stepping into this function, we see 9 mov instructions that copy bytes starting at address 0x2400.
 
 ![create_password](./screenshots/create_password.png)
 
