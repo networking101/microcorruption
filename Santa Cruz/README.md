@@ -1,4 +1,4 @@
-# Montevideo
+# Santa Cruz
 ## TLDR
 This program is vulnerable to a stack buffer overflow.  
 There is a username and password supplied by the user.  
