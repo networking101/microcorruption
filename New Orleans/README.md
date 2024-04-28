@@ -2,7 +2,7 @@
 ## TLDR
 The password is stored in create_password.
 Instructions copy password one byte at a time into address 0x2400.
-Function <check_password> compares user input to password.
+Function check_password compares user input to password.
 
 ## Details
 The LockIT Pro a.01  is the first of a new series  of locks. It is
