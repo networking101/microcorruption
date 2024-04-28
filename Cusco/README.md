@@ -1,6 +1,6 @@
 # Cusco
 ## TLDR
-This program is vulnerable to buffer overflow.  
+This program is vulnerable to a stack buffer overflow.  
 The return address in the login function can be overwritten with user input.  
 Jump to unlock_door function on return.  
 
