@@ -45,7 +45,7 @@ The user's input is stored on the stack. The I/O Console states that passwords a
 
 The test_password_valid function uses interrupt 0x7d to check the password. We have no way of finding the correct password in program memory.
 
-The result of test_password_valid is checked in the login function. We have no control of execution flow to get to access granted.
+The result of test_password_valid is checked in the login function. We cannot trick the jump instruction to get access granted this time.
 
 ![login2](./screenshots/login2.png)
 
