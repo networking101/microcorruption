@@ -1,6 +1,6 @@
 # Whitehorse
 ## TLDR
-This program is vulnerable to buffer overflow.  
+This program is vulnerable to a stack buffer overflow.  
 The return address in the login function can be overwritten with user input.  
 We don't have an unconditional unlock function this time.  
 Jump to an int call and use 0x7f (unconditional unlock interrupt) as the first stack argument.  
