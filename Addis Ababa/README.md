@@ -42,7 +42,7 @@ Let's look at our calls to printf.
 
 ![main](./screenshots/main.png)
 
-There are 3 calls to printf. The only call that takes user input is at instruction address 0x447c. We can see the contents by setting a breakpoint before the call.
+There are 3 calls to printf in main. The only call that takes user input is at instruction address 0x447c. We can see the contents by setting a breakpoint before the call.
 
 ![memory](./screenshots/memory.png)
 
