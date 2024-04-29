@@ -1,0 +1,172 @@
+printf:
+45c8:  0b12           push	r11
+45ca:  0a12           push	r10
+45cc:  0912           push	r9
+45ce:  0812           push	r8
+45d0:  0712           push	r7
+45d2:  0412           push	r4
+45d4:  0441           mov	sp, r4
+45d6:  3450 0c00      add	#0xc, r4
+45da:  2183           decd	sp
+45dc:  1b44 0200      mov	0x2(r4), r11			# r11 = first argument
+45e0:  8441 f2ff      mov	sp, -0xe(r4)
+45e4:  0f4b           mov	r11, r15
+45e6:  0e43           clr	r14
+45e8:  0b3c           jmp	$+0x18 <printf+0x38>
+
+printf+0x22:							# jump here if curr char is not NULL
+45ea:  1f53           inc	r15
+45ec:  7d90 2500      cmp.b	#0x25, r13
+45f0:  0720           jnz	$+0x10 <printf+0x38>
+45f2:  6d9f           cmp.b	@r15, r13			# continue here if curr char is '%'
+45f4:  0320           jnz	$+0x8 <printf+0x34>
+45f6:  1f53           inc	r15				# continue here if curr chars are '%%'
+45f8:  0d43           clr	r13
+45fa:  013c           jmp	$+0x4 <printf+0x36>
+
+# setup to check next character after '%'
+printf+0x34:
+45fc:  1d43           mov	#0x1, r13
+45fe:  0e5d           add	r13, r14			# r14 contains the number of format specifiers that need to be processed
+
+# Process characters from printf arguments
+printf+0x38:							# check next character
+4600:  6d4f           mov.b	@r15, r13
+4602:  4d93           tst.b	r13
+4604:  f223           jnz	$-0x1a <printf+0x22>
+4606:  0f4e           mov	r14, r15			# continue here if curr char is NULL
+4608:  0f5f           add	r15, r15
+460a:  2f53           incd	r15
+460c:  018f           sub	r15, sp
+460e:  0941           mov	sp, r9
+4610:  0c44           mov	r4, r12
+4612:  2c52           add	#0x4, r12
+4614:  0f41           mov	sp, r15
+4616:  0d43           clr	r13
+4618:  053c           jmp	$+0xc <printf+0x5c>
+
+# Moved something from 4048 to stack (4032)? This stack space was setup when checking how many format specifiers we need to account for
+printf+0x52:							# jump here if we need to account for a format specifiers
+461a:  af4c 0000      mov	@r12, 0x0(r15)
+461e:  1d53           inc	r13
+4620:  2f53           incd	r15
+4622:  2c53           incd	r12
+
+# Done processing? Prep to start printing characters
+printf+0x5c:
+4624:  0d9e           cmp	r14, r13			# if r14 != r13, we have some format specifiers to process
+4626:  f93b           jl	$-0xc <printf+0x52>
+4628:  0a43           clr	r10				# continue here if we don't have any more format specifiers to account for
+462a:  3740 0900      mov	#0x9, r7
+462e:  4a3c           jmp	$+0x96 <printf+0xfc>
+
+# Print character to console
+printf+0x68:							# jump here is curr char is not NULL
+4630:  084b           mov	r11, r8
+4632:  1853           inc	r8
+4634:  7f90 2500      cmp.b	#0x25, r15
+4638:  0624           jz	$+0xe <printf+0x7e>
+463a:  1a53           inc	r10				# continue here if curr char is not '%'
+								# r10 contains number of characters printed
+463c:  0b48           mov	r8, r11
+463e:  8f11           sxt	r15
+4640:  b012 5045      call	#0x4550 <putchar>		# print char at r15
+4644:  3f3c           jmp	$+0x80 <printf+0xfc>
+
+printf+0x7e:							# jump here if curr char is '%'
+4646:  6e48           mov.b	@r8, r14
+4648:  4e9f           cmp.b	r15, r14
+464a:  0620           jnz	$+0xe <printf+0x90>
+464c:  1a53           inc	r10				# continue here if curr chars are '%%'
+464e:  3f40 2500      mov	#0x25, r15
+4652:  b012 5045      call	#0x4550 <putchar>
+4656:  333c           jmp	$+0x68 <printf+0xf6>
+
+# setup to check next character after '%'
+printf+0x90:
+4658:  7e90 7300      cmp.b	#0x73, r14
+465c:  0b20           jnz	$+0x18 <printf+0xac>
+465e:  2b49           mov	@r9, r11			# continue here if curr chars are '%s'
+4660:  053c           jmp	$+0xc <printf+0xa4>
+
+printf+0x9a:
+4662:  1a53           inc	r10
+4664:  1b53           inc	r11
+4666:  8f11           sxt	r15
+4668:  b012 5045      call	#0x4550 <putchar>
+
+# process '%s'
+printf+0xa4:
+466c:  6f4b           mov.b	@r11, r15
+466e:  4f93           tst.b	r15
+4670:  f823           jnz	$-0xe <printf+0x9a>
+4672:  253c           jmp	$+0x4c <printf+0xf6>
+
+printf+0xac:
+4674:  7e90 7800      cmp.b	#0x78, r14			# jump here if curr chars are not '%s'
+4678:  1c20           jnz	$+0x3a <printf+0xea>
+467a:  2b49           mov	@r9, r11			# continue here if curr chars are '%x'
+467c:  173c           jmp	$+0x30 <printf+0xe4>
+
+# print hex at '%x' location
+printf+0xb6:
+467e:  0f4b           mov	r11, r15
+4680:  8f10           swpb	r15
+4682:  3ff0 ff00      and	#0xff, r15
+4686:  12c3           clrc
+4688:  0f10           rrc	r15
+468a:  0f11           rra	r15
+468c:  0f11           rra	r15
+468e:  0f11           rra	r15
+4690:  1a53           inc	r10
+4692:  079f           cmp	r15, r7
+4694:  0338           jl	$+0x8 <printf+0xd4>
+4696:  3f50 3000      add	#0x30, r15
+469a:  023c           jmp	$+0x6 <printf+0xd8>
+
+# convert byte to char byte
+printf+0xd4:
+469c:  3f50 5700      add	#0x57, r15
+
+# write byte from '%x' to console
+printf+0xd8:
+46a0:  b012 5045      call	#0x4550 <putchar>
+46a4:  0b5b           add	r11, r11
+46a6:  0b5b           add	r11, r11
+46a8:  0b5b           add	r11, r11
+46aa:  0b5b           add	r11, r11
+
+# check if characters at '%x' location are not NULL, if they aren't print them out
+printf+0xe4:
+46ac:  0b93           tst	r11
+46ae:  e723           jnz	$-0x30 <printf+0xb6>
+46b0:  063c           jmp	$+0xe <printf+0xf6>
+
+# jump here if curr chars are not '%x' or '%s'
+# process '%n'
+printf+0xea:
+46b2:  7e90 6e00      cmp.b	#0x6e, r14
+46b6:  0320           jnz	$+0x8 <printf+0xf6>
+46b8:  2f49           mov	@r9, r15			# continue here if curr chars are '%n'
+46ba:  8f4a 0000      mov	r10, 0x0(r15)			# copy number of bytes written so far to printf argument
+
+# increment r9 (formated string pointer) and skip r8 (pointer to characters being printed) by 2 (skips over '%_'
+printf+0xf6:
+46be:  2953           incd	r9
+46c0:  0b48           mov	r8, r11
+46c2:  1b53           inc	r11
+
+# Start printing characters to console
+printf+0xfc:
+46c4:  6f4b           mov.b	@r11, r15
+46c6:  4f93           tst.b	r15
+46c8:  b323           jnz	$-0x98 <printf+0x68>
+46ca:  1144 f2ff      mov	-0xe(r4), sp			# continue here if curr char is NULL
+46ce:  2153           incd	sp
+46d0:  3441           pop	r4
+46d2:  3741           pop	r7
+46d4:  3841           pop	r8
+46d6:  3941           pop	r9
+46d8:  3a41           pop	r10
+46da:  3b41           pop	r11
+46dc:  3041           ret
