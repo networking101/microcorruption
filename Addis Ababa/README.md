@@ -65,7 +65,7 @@ The %n format parameter will write bytes to memory. We can use this to patch an 
 
 The %n parameter works by writing the number of bytes already printed to the address that %n references on the stack. This means that one of our %x from our test earlier (not the first one due to null bytes at the address) can store address 0x448e and a %n pointing to that location will overwrite the jump.
 
-Now we need to figure out what to write. We are limited by the number of characters we can pass into printf. The call to getsn at instruction address 0x445c will only read 0x13 bytes from the user. We can use %s (2 bytes each) to read long strings and there is a long string starting at 0xff80. However, we shouldn't need much since we just need an instruction that will prevent a jump. Turn to the disassembler for some instructions and remember we are in little endian.
+Now we need to figure out what to write. We are limited by the number of characters we can pass into printf. The call to getsn at instruction address 0x445c will only read 0x13 bytes from the user. We can use %s (2 bytes each) to read long strings and there is a long string starting at 0xff80. However, we shouldn't need much since we only want an instruction that will prevent a jump. Turn to the disassembler for some instructions and remember we are in little endian.
 
 ![disassembler](./screenshots/disassembler.png)
 
