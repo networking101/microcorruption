@@ -79,7 +79,7 @@ We are left with rrc on registers r4 - r15. We don't want to break anything that
 
 It looks like r4, and r6-r10 are set to 0 and unused in main. Let's use r4.
 
-To exploit this vulnerability, we will need to first print out 4 bytes. 2 of these bytes will be the address we will patch and the other 2 will be garbage. There are 2 bytes of nulls on our stack so next we will need a %x parameter to skip over address 0x4048. (this will not print any bytes and will not affect the value written with %n). Finally, our %n parameter which will point at address 0x404a. A visual of the stack and its values can be seen below.
+To exploit this vulnerability, we will need to first print out 4 bytes. 2 of these bytes will be the address we will patch and the other 2 will be garbage. There are 2 bytes of nulls on our stack so next we will need a %x parameter to skip over address 0x4048. (this will not print any bytes and will not affect the value written with %n). Finally, our %n parameter which will point to 0x448e at address 0x404a. A visual of the stack and its values can be seen below.
 
 ```
        STACK
