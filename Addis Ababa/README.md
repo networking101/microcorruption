@@ -97,7 +97,7 @@ Send it away.
 
 ![main2](./screenshots/main2.png)
 
-Looks like it worked. We can see our length of 4 is written to address 0x448e
+Looks like it worked. The value at address 0x448e was overwritten. We can see our length of 4 is written to address 0x448e.
 
 ![debugger](./screenshots/debugger.png)
 
