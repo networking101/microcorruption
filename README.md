@@ -6,3 +6,15 @@ https://microcorruption.com/
 ## Embedded Security CTF
 
 This repository contains my solutions for each exercise.
+
+[New Orleans](https://github.com/networking101/microcorruption/tree/main/New%20Orleans)  
+[Sydney](https://github.com/networking101/microcorruption/tree/main/Sydney)  
+[Hanoi](https://github.com/networking101/microcorruption/tree/main/Hanoi)  
+[Cusco](https://github.com/networking101/microcorruption/tree/main/Cusco)  
+[Reykjavik](https://github.com/networking101/microcorruption/tree/main/Reykjavik)  
+[Whitehorse](https://github.com/networking101/microcorruption/tree/main/Whitehorse)  
+[Montevideo](https://github.com/networking101/microcorruption/tree/main/Montevideo)  
+[Johannesburg](https://github.com/networking101/microcorruption/tree/main/Johannesburg)  
+[Santa Cruz](https://github.com/networking101/microcorruption/tree/main/Santa%20Cruz)  
+[Jakarta](https://github.com/networking101/microcorruption/tree/main/Jakarta)  
+[Addis Ababa](https://github.com/networking101/microcorruption/tree/main/Addis%20Ababa)  
