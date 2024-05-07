@@ -18,3 +18,4 @@ This repository contains my solutions for each exercise.
 [Santa Cruz](https://github.com/networking101/microcorruption/tree/main/Santa%20Cruz)  
 [Jakarta](https://github.com/networking101/microcorruption/tree/main/Jakarta)  
 [Addis Ababa](https://github.com/networking101/microcorruption/tree/main/Addis%20Ababa)  
+[Novosibirsk](https://github.com/networking101/microcorruption/tree/main/Novosibirsk)  
