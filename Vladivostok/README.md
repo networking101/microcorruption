@@ -55,7 +55,13 @@ The program wipes the original instructions but we can view the disassembly befo
 
 ![aslr_main](./screenshots/aslr_main.png)
 
-I copied the instructions to a text file so I could make edits...
+I copied the instructions to a text file so I could view the disassembly while I debugged. You can view my file with comments [here](https://github.com/networking101/microcorruption/blob/main/Vladivostok/aslr.txt).
+
+As I stepped through the program, the first thing I noticed is that none of the interrupts are wrapped in a calling function. We don't have a vulnerability yet, but when we do our exploit will need to mannually set up the interrupt call to unlock the door.
+
+The ASLR program has these steps.
+1. puts "Username (8 char max):"
+2. 
 
 ## Answer
 Username: (hex) 25782578
