@@ -1,8 +1,8 @@
 # Vladivostok
 ## TLDR
 This program uses ASLR to randomize the stack and text sections.  
-A format string vulnerability is used to leak an address on the text section.  
-A buffer overflow can be used to overwrite the return address of the function at base+0x82.  
+A format string vulnerability is used to leak an address of the text section.  
+A buffer overflow can be used to overwrite the return address _aslr_main function.  
 Use a ROP gadget to pop 0x00ff into the sr register.  
 Use another ROP gadget to call INT.  
 
@@ -49,7 +49,7 @@ Start on main.
 
 ![main](./screenshots/main.png)
 
-There is not much here. The rand function is called twice and a memcpy moves a large amount of memory that contains instructions to a random address. Then the function ends by jumping to r13. It looks like this challenge implements ASLR (Adress Space Layout Randomization) to obfuscate the code and to prevent an attacker jumping to a static instruction address.
+There is not much here. The rand function is called twice and a memcpy moves a large amount of memory that contains instructions to a random address. Then the function ends by jumping to r13. It looks like this challenge implements ASLR (Adress Space Layout Randomization) to obfuscate the code and to prevent an attacker from jumping to a static instruction address.
 
 The program wipes the original instructions but we can view the disassembly before running the program.
 
@@ -62,7 +62,7 @@ The ASLR program does the following:
 2. puts "Username (8 char max):\n"
 3. puts ">>"
 4. gets 0x8 bytes of username with gets
-5. calls printf of the username buffer
+5. calls printf on the username buffer
 6. puts "\nPassword\n:
 7. gets 0x14 bytes of password with gets
 8. calls INT 0x7e on supplied password
@@ -79,9 +79,46 @@ It works! I was considering using printf to write to memory. However, we only ha
 
 As I keep debugging, I see that we have a buffer overflow in the password buffer. It only takes 8+ bytes to overwrite the return address in _aslr_main.
 
-Now what do we want to jump to? I mentioned above that none of the interrupts are wrapped. All calls to int are inline with the _aslr_main function so we need to setup the stack to call INT 0x7f. My first thought was to jump to address +
+Now what do we want to jump to? I mentioned above that none of the interrupts are wrapped. All calls to int are inline with the _aslr_main function so we need to setup the stack to call INT 0x7f. My first thought was to jump to address 0x46ba. This would let us leave the interrupt (0x7f) on the stack using our buffer overflow and let execution continue at "push pc".
 
-Now we have all the pieces needed to exploit the door. We have a buffer overflow that will overwrite a return address, a relative address into the text section, and set of instructions that will open the door.
+![aslr_main2](./screenshots/aslr_main2.png)
+
+However, looking forward we see that the r13 register gets loaded into r15. The stack is not used to send the 0x7f interrupt. Looking at the rest of the code we see how 0x7f get passed to the interrupt handler at instructions 0x46be-0x46c8. First r13 is moved to r15 (0x46be) and r15 bytes are swapped (0x46c0). Then r15 is moved to sr (0x46c2). Next the most significant bit is set on sr (0x46c4). Finally the call is made to address 10.
+
+All we need to unlock the door is sr=0xff00 when INT is called. We can test this by setting pc to an instruction that calls 0x10 and setting sr to 0xff00. Use the "l" command to set the registers and try this yourself.
+
+```
+l pc = 454e
+l sr = ff00
+c
+```
+
+![unlocked](./screenshots/unlocked.png)
+
+So now we need to find a way to set sr to 0xff. I start looking for ROP (return-oriented programming) gadgets and fortunately there is a "pop sr; ret" gadget at address 0x4900 that will be perfect.
+
+https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/rop-chaining-return-oriented-programming
+
+But we can't call this address directly, we have to use our memory leak from printf to find the ASLR offset and calulate the address we need. This gadget is 0x196 bytes after the memory leak. Everytime we run this exploit we will need to provide a different address to get to this instruction.
+
+Now we need a relative offset to a call to int. I chose the instruction at adress 0x46c8 which is 0xa2 bytes before the memory leak.
+
+*NOTE: After I solved the problem I realized there is an INT function that can be called at address 0x48ec. That makes this challenge much easier. I left my original solution in here incase anyone wanted an alternate way to solve.*
+
+![gadget](./screenshots/gadget.png)
+
+Now we have all the pieces needed to exploit the door. We have a buffer overflow that will overwrite a return address, a relative address into the text section, a ROP gadget that will set sr, and a ROP gadget that will jump to an INT call. Here is a visual of our exploit on the stack.
+
+```
+        STACK
+        ------
+$sp     |4141| junk
+         ....
+$sp + 8 |0049| ROP gadget #1 (0x196 bytes after memory leak)
+$sp + a |ff00| value stored at sr register (0x7f interrupt)
+$sp + c |c846| ROP gadget #2 (0xa2 bytes before memory leak)
+        -----
+```
 
 ## Answer
 Username: (hex) 25782578  
