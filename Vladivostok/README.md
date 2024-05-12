@@ -57,12 +57,32 @@ The program wipes the original instructions but we can view the disassembly befo
 
 I copied the instructions to a text file so I could view the disassembly while I debugged. You can view my file with comments [here](https://github.com/networking101/microcorruption/blob/main/Vladivostok/aslr.txt).
 
+The ASLR program does the following:
+1. calls _aslr_main
+2. puts "Username (8 char max):\n"
+3. puts ">>"
+4. gets 0x8 bytes of username with gets
+5. calls printf of the username buffer
+6. puts "\nPassword\n:
+7. gets 0x14 bytes of password with gets
+8. calls INT 0x7e on supplied password
+9. puts "Wrong!\n"
+10. returns to aslr_main
+
 As I stepped through the program, the first thing I noticed is that none of the interrupts are wrapped in a calling function. We don't have a vulnerability yet, but when we do our exploit will need to mannually set up the interrupt call to unlock the door.
 
-The ASLR program has these steps.
-1. puts "Username (8 char max):"
-2. 
+I also noticed the use of printf on the username buffer. Lets see if we have a format string vulnerabilty. Send "%x%x%x%x" as the username.
+
+![console](./screenshots/console.png)
+
+It works! I was considering using printf to write to memory. However, we only have 8 bytes of user buffer to work with and our memory is randomized. It is much more likely the the reason for this printf is to give us a memory leak. The address shown here (0xda8e) is within our randomized text section. When we calculate the offset, we see that it points to the start of the printf function. We can use this to bypass ASLR.
+
+As I keep debugging, I see that we have a buffer overflow in the password buffer. It only takes 8+ bytes to overwrite the return address in _aslr_main.
+
+Now what do we want to jump to? I mentioned above that none of the interrupts are wrapped. All calls to int are inline with the _aslr_main function so we need to setup the stack to call INT 0x7f. My first thought was to jump to address +
+
+Now we have all the pieces needed to exploit the door. We have a buffer overflow that will overwrite a return address, a relative address into the text section, and set of instructions that will open the door.
 
 ## Answer
-Username: (hex) 25782578
-Password: (hex) 4141414141414141<leak+0x196>00ff<leak-0xa2>
+Username: (hex) 25782578  
+Password: (hex) 4141414141414141<leak+0x196>00ff\<leak-0xa2>  
