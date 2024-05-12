@@ -21,3 +21,4 @@ This repository contains my solutions for each exercise.
 [Novosibirsk](https://github.com/networking101/microcorruption/tree/main/Novosibirsk)  
 [Algiers](https://github.com/networking101/microcorruption/tree/main/Algiers)  
 [Vladivostok](https://github.com/networking101/microcorruption/tree/main/Vladivostok)  
+[Bangalore](https://github.com/networking101/microcorruption/tree/main/Bangalore)  
