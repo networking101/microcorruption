@@ -69,21 +69,21 @@ The ASLR program does the following:
 9. puts "Wrong!\n"
 10. returns to aslr_main
 
-As I stepped through the program, the first thing I noticed is that none of the interrupts are wrapped in a calling function. We don't have a vulnerability yet, but when we do our exploit will need to mannually set up the interrupt call to unlock the door.
+As I stepped through the program, the first thing I noticed is that none of the interrupts are wrapped in a calling function. We don't have a vulnerability yet, but when we do, our exploit will need to manually set up the interrupt call to unlock the door.
 
-I also noticed the use of printf on the username buffer. Lets see if we have a format string vulnerabilty. Send "%x%x%x%x" as the username.
+I also noticed the use of printf on the username buffer. Let's see if we have a format string vulnerability. Send "%x%x%x%x" as the username.
 
 ![console](./screenshots/console.png)
 
-It works! I was considering using printf to write to memory. However, we only have 8 bytes of user buffer to work with and our memory is randomized. It is much more likely the the reason for this printf is to give us a memory leak. The address shown here (0xda8e) is within our randomized text section. When we calculate the offset, we see that it points to the start of the printf function. We can use this information to bypass ASLR.
+It works! I was considering using printf to write to memory. However, we only have 8 bytes of user buffer to work with and our memory is randomized. It is much more likely the reason for this printf is to give us a memory leak. The address shown here (0xda8e) is within our randomized text section. When we calculate the offset, we see that it points to the start of the printf function. We can use this information to bypass ASLR.
 
 As I keep debugging, I see that we have a buffer overflow in the password buffer. It only takes 8+ bytes to overwrite the return address in _aslr_main.
 
-Now what do we want to jump to? I mentioned above that none of the interrupts are wrapped. All calls to int are inline with the _aslr_main function so we need to setup the stack to call INT 0x7f. My first thought was to jump to address 0x46ba. This would let us leave the interrupt (0x7f) on the stack using our buffer overflow and let execution continue at "push pc".
+Now what do we want to jump to? I mentioned above that none of the interrupts are wrapped. All calls to int are in line with the _aslr_main function so we need to setup the stack to call INT 0x7f. My first thought was to jump to address 0x46ba. This would let us leave the interrupt (0x7f) on the stack using our buffer overflow and let execution continue at "push pc".
 
 ![aslr_main2](./screenshots/aslr_main2.png)
 
-However, looking forward we see that the r13 register gets loaded into r15. The stack is not used to send the 0x7f interrupt. Looking at the rest of the code we see how 0x7f is passed to the interrupt handler at instructions 0x46be-0x46c8. First r13 is moved to r15 (0x46be) and r15 bytes are swapped (0x46c0). Then r15 is moved to sr (0x46c2). Next the most significant bit is set on sr (0x46c4). Finally the call is made to address 10 (0x46c8).
+However, looking forward we see that the r13 register gets loaded into r15. The stack is not used to send the 0x7f interrupt. Looking at the rest of the code we see how 0x7f is passed to the interrupt handler at instructions 0x46be-0x46c8. First r13 is moved to r15 (0x46be) and r15 bytes are swapped (0x46c0). Then r15 is moved to sr (0x46c2). Next the most significant bit is set on sr (0x46c4). Finally, the call is made to address 10 (0x46c8).
 
 All we need to unlock the door is sr=0xff00 when INT is called. We can test this by setting pc to an instruction that calls 0x10 and setting sr to 0xff00. Use the "l" command to set the registers and try this yourself.
 
@@ -101,11 +101,11 @@ So now we need to find a way to set sr to 0xff00. I start looking for ROP (retur
 
 https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/rop-chaining-return-oriented-programming
 
-But we can't call this address directly, we have to use our memory leak from printf to find the ASLR offset and calulate the address we need. This gadget is 0x196 bytes after the memory leak. Everytime we run this exploit we will need to provide a different address to get to this instruction.
+But we can't call this address directly, we have to use our memory leak from printf to find the ASLR offset and calculate the address we need. This gadget is 0x196 bytes after the memory leak. Every time we run this exploit, we will need to provide a different address to get to this instruction.
 
-Now we need a relative offset to a call to int. I chose the instruction at adress 0x46c8 which is 0xa2 bytes before the memory leak.
+Now we need a relative offset to a call to int. I chose the instruction at address 0x46c8 which is 0xa2 bytes before the memory leak.
 
-*NOTE: After I solved the problem I realized there is an INT function that can be called at address 0x48ec. That makes this challenge much easier. I left my original solution in here incase anyone wanted an alternate way to solve.*
+*NOTE: After I solved the problem, I realized there is an INT function that can be called at address 0x48ec. That makes this challenge much easier. I left my original solution in here in case anyone wanted an alternate way to solve.*
 
 Now we have all the pieces needed to exploit the door. We have a buffer overflow that will overwrite a return address, a relative address into the text section, a ROP gadget that will set sr, and a ROP gadget that will jump to an INT call. Here is a visual of our exploit on the stack.
 
@@ -120,7 +120,7 @@ $sp + c |c846| ROP gadget #2 (0xa2 bytes before memory leak)
         -----
 ```
 
-Remember the values shown will need to be calculated everytime the exploit is run.
+Remember the values shown will need to be calculated every time the exploit is run.
 
 ## Answer
 Username: (hex) 25782578  
