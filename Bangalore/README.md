@@ -41,7 +41,21 @@ This is Software Revision 01. The new firmware supports the memory
 protection we have introduced in this new hardware version.
 
 ## Solution
+Start at main.
 
+![main](./screenshots/main.png)
+
+This challenge calls a function called set_up_protection before going to login. See what's at this function.
+
+![set_up_protection](./screenshots/set_up_protection.png)
+
+We see multiple calls to mark_page_executable and mark_page_writable before turn_on_dep is called.
+
+![dep](./screenshots/dep.png)
+
+These are some interrupt calls we have not seen before. The [manual](https://github.com/networking101/microcorruption/tree/main/manual.pdf) shows that INT 0x11 will make a page only writable or executable. 
+
+![memory_protection](./screenshots/memory_protection.png)
 
 ## Answer
 Username: (hex) 25782578  
