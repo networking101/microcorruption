@@ -120,7 +120,7 @@ $sp + c |c846| ROP gadget #2 (0xa2 bytes before memory leak)
         -----
 ```
 
-Remember the values shown will need to be calculated every time the exploit is run.
+Remember the ROP addresses will need to be calculated every time the exploit is run.
 
 ## Answer
 Username: (hex) 25782578  
