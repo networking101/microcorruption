@@ -53,10 +53,41 @@ We see multiple calls to mark_page_executable and mark_page_writable before turn
 
 ![dep](./screenshots/dep.png)
 
-These are some interrupt calls we have not seen before. The [manual](https://github.com/networking101/microcorruption/tree/main/manual.pdf) shows that INT 0x11 will make a page only writable or executable. 
+These are some interrupt calls we have not seen before. The [manual](https://github.com/networking101/microcorruption/tree/main/manual.pdf) shows that INT 0x11 will make a page only writable or executable. The first argument is the page number and the second argument indicates writable (1) or executable (0). There is a paragraph on page 3 that talks about memory protection. The total memory space (0x10000 bytes) is split into 256 pages (0x100 bytes per page). 
 
 ![memory_protection](./screenshots/memory_protection.png)
 
+Looking at the setup protection function, we can determine which pages are executable and which are writable.
+* 0x00 - 0xff - executable (interrupt instructions)
+* 0x100 - 0x43ff - writable (stack space)
+* 0x44ff - 0xffff - executable (program instructions)
+Finally dep is enabled with the call to turn_on_dep.
+
+Now lets turn to the login function.
+
+![login](./screenshots/login.png)
+
+This function is pretty straight forward. The program asks for a password, takes input from the user, and always says the password is incorrect. There is a very obvious stack buffer overflow that we can use to overwrite the return address, but we don't have an unconditional unlock door function. We also cannot jump to shellcode on the stack. We need to use ROP gadgets to chain instructions that will unlock the door.
+
+https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/rop-chaining-return-oriented-programming
+
+First look for pops.
+
+![pop](./screenshots/pop.png)
+
+Only pop into r11, fortunately these instructions are immediatly followed by ret which makes them good candidates for gadgets. Next look for anything with the stack pointer.
+
+![sp](./screenshots/sp.png)
+
+Not much here. We can add to the stack pointer easily but not subtract. Finally look for any moves from r11 into another register.
+
+![r11](./screenshots/r11.png)
+
+A few moves but nothing shortly followed by a ret.
+
+My first attempt was to jump to 0x44f6 and make everything from 0x4300 - 0xffff, including the stack, executable. This would have been after we wrote our buffer with shellcode to 0x3fee. However I quickly found out that the program still needs to write to the stack and execution was halted.
+
+If we look at where the stack pointer resides it is usually in the page between 0x4000 and 0x40ff. If we can keep the stack pointer in this range we only need to set page 0x3f as executable. The solution I found jumps us to address 0x44a6. This will call interrupt 0x11 with both arguments on the stack. We can use our buffer overflow to set the page to 0x3f and option to executable. Then any of our buffer within address 0x3f00 and 0x3fff will be executable.
+
 ## Answer
-Username: (hex) 25782578  
-Password: (hex) 4141414141414141<leak+0x196>00ff\<leak-0xa2>  
+Password: (hex) 324000ffb01210004141414141414141a6440000000000003f000000ee3f  
