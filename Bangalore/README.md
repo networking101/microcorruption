@@ -85,9 +85,15 @@ Not much here. We can add to the stack pointer easily but not subtract. Finally 
 
 A few moves but nothing shortly followed by a ret.
 
-My first attempt was to jump to 0x44f6 and make everything from 0x4300 - 0xffff, including the stack, executable. This would have been after we wrote our buffer with shellcode to 0x3fee. However I quickly found out that the program still needs to write to the stack and execution was halted.
+My first attempt was to jump to 0x44f6 and make everything from 0x4300 - 0xffff, including the stack, executable. This would have been safe because it happens after we write our buffer with shellcode to 0x3fee. However, I quickly found out that the program still needs to write to the stack and execution was halted.
 
-If we look at where the stack pointer resides it is usually in the page between 0x4000 and 0x40ff. If we can keep the stack pointer in this range we only need to set page 0x3f as executable. The solution I found jumps us to address 0x44a6. This will call interrupt 0x11 with both arguments on the stack. We can use our buffer overflow to set the page to 0x3f and option to executable. Then any of our buffer within address 0x3f00 and 0x3fff will be executable.
+If we look at where the stack pointer resides it is usually in the page between 0x4000 and 0x40ff. If we can keep the stack pointer in this range we only need to set page 0x3f as executable. The solution I found jumps us to address 0x44a6. This will call interrupt 0x11 with both arguments on the stack. We can use our buffer overflow to set the page to 0x3f and option 0. Then any of our buffer within address 0x3f00 and 0x3fff will be executable. As for our shellcode, we want to move 0xff00 into sr and call INT.
+
+![shellcode](./screenshots/shellcode.png)
+
+You can see what the stack looks like when we set a breakpoint on 0x44a6.
+
+![memory](./screenshots/memory.png)
 
 ## Answer
 Password: (hex) 324000ffb01210004141414141414141a6440000000000003f000000ee3f  
