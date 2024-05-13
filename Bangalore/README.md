@@ -1,5 +1,9 @@
 # Bangalore
 ## TLDR
+DEP (Data Execution Prevention) is enabled.  
+The program is vulnerable to a stack buffer overflow.  
+Use interrupt 0x11 to make page 0x3f executable.  
+Jump to the stack to execute instructions that will call interrupt 0x7f.  
 
 ## Details
 The LockIT Pro c.01  is the first of a new series  of locks. It is
@@ -61,6 +65,7 @@ Looking at the setup protection function, we can determine which pages are execu
 * 0x00 - 0xff - executable (interrupt instructions)
 * 0x100 - 0x43ff - writable (stack space)
 * 0x44ff - 0xffff - executable (program instructions)
+
 Finally dep is enabled with the call to turn_on_dep.
 
 Now lets turn to the login function.
@@ -75,7 +80,7 @@ First look for pops.
 
 ![pop](./screenshots/pop.png)
 
-Only pop into r11, fortunately these instructions are immediatly followed by ret which makes them good candidates for gadgets. Next look for anything with the stack pointer.
+Only pop into r11, fortunately these instructions are immediately  followed by ret which makes them good candidates for gadgets. Next look for anything with the stack pointer.
 
 ![sp](./screenshots/sp.png)
 
@@ -83,15 +88,15 @@ Not much here. We can add to the stack pointer easily but not subtract. Finally 
 
 ![r11](./screenshots/r11.png)
 
-A few moves but nothing shortly followed by a ret.
+A few moves but nothing followed immediately by a ret.
 
-My first attempt was to jump to 0x44f6 and make everything from 0x4300 - 0xffff, including the stack, executable. This would have been safe because it happens after we write our buffer with shellcode to 0x3fee. However, I quickly found out that the program still needs to write to the stack and execution was halted.
+My first attempt was to jump to 0x44f6 and make everything from 0x4300 - 0xffff, including the stack, executable. I thought this would work because it happens after we write our buffer with shellcode to 0x3fee. However, I quickly found out that the program still needs to write to the stack and execution was halted.
 
-If we look at where the stack pointer resides it is usually in the page between 0x4000 and 0x40ff. If we can keep the stack pointer in this range we only need to set page 0x3f as executable. The solution I found jumps us to address 0x44a6. This will call interrupt 0x11 with both arguments on the stack. We can use our buffer overflow to set the page to 0x3f and option 0. Then any of our buffer within address 0x3f00 and 0x3fff will be executable. As for our shellcode, we want to move 0xff00 into sr and call INT.
+If we look at where the stack pointer resides it is usually in page 0x40 (0x4000 - 0x40ff). If we can keep the stack pointer in this range, we only need to set page 0x3f as executable. The solution I found jumps us to address 0x44a6. This will call interrupt 0x11 with both arguments on the stack. We can use our buffer overflow to set the page to 0x3f and option 0. Then any bytes of our buffer within address 0x3f00 and 0x3fff will be executable. As for our shellcode, we want to move 0xff00 into sr and call INT.
 
 ![shellcode](./screenshots/shellcode.png)
 
-You can see what the stack looks like when we set a breakpoint on 0x44a6.
+Place these bytes at the beginning of the password buffer and use a final return address to jump to stack address 0x3fee. You can see what the stack looks like when we set a breakpoint on 0x44a6.
 
 ![memory](./screenshots/memory.png)
 
