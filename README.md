@@ -23,3 +23,4 @@ This repository contains my solutions for each exercise.
 [Vladivostok](https://github.com/networking101/microcorruption/tree/main/Vladivostok)  
 [Bangalore](https://github.com/networking101/microcorruption/tree/main/Bangalore)  
 [Lagos](https://github.com/networking101/microcorruption/tree/main/Lagos)  
+[Chernobyl](https://github.com/networking101/microcorruption/tree/main/Chernobyl)  
