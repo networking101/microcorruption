@@ -17,3 +17,19 @@ Start of each hash table:
 Check first byte of user input
 * 0x61  -  access [your name] [pin]
 * 0x6e  -  new [your name] [pin]
+
+
+```
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 1
+new AAAAAAAAAAAAAAAA 2
+new AAAAAAAAAAAAAAAA 3
+new AAAAAAAAAAAAAAAA 4
+new AAAAAAAAAAAAAAAA 5
+new juju0 0
+new juju1 1
+new juju2 2
+new juju3 3
+new juju4 4
+new juju5 5
+```
