@@ -26,10 +26,17 @@ new AAAAAAAAAAAAAAAA 2
 new AAAAAAAAAAAAAAAA 3
 new AAAAAAAAAAAAAAAA 4
 new BBBBBBBBBBBBBBBB 5
+6e657720 063e 8010 424242424242424242424242 2030
+6e657720 f43d 8010 01 2030
 new juju0 0
-new juju1 1
-new juju2 2
-new juju3 3
-new juju4 4
-new juju5 5
+new juju1 0
+new juju2 0
+new juju3 0
+new juju4 0
+6e6577206a756a75 3c50 9c50 4242
+
+464d7f 20 30
 ```
+TODO point back to buffer, not start of heap structure
+
+New hash table: 0x533c - 0x5987 (0x64b bytes)
