@@ -39,7 +39,7 @@ characters passwords may contain,  only alphanumeric passwords are
 accepted.
 
 ## Solution
-This time our inputs are limited to alphanumeric characters. This means we can only use the following bytes:
+This time our inputs are limited to alphanumeric characters. This means we can only send the following bytes:
 * 0x30 - 0x39
 * 0x41 - 0x5a
 * 0x61 - 0x7a
@@ -48,7 +48,7 @@ Start at login.
 
 ![login](./screenshots/login.png)
 
-The call to getsn reads 0x200 bytes from the user. This is plenty to overflow the return address. Here we can also see the code that checks our input bytes. It doesn't seem to have any vulnerabilities.
+The call to getsn reads 0x200 bytes from the user. This is plenty to overflow the return address. Here we can also see the code that filters our input bytes. It doesn't seem to have any vulnerabilities.
 
 Take a look at the getsn function.
 
@@ -56,7 +56,7 @@ Take a look at the getsn function.
 
 This function is reachable with alphanumeric bytes in our buffer overflow. When this function is called, r14, r15, and the 0x2 interrupt will be pushed to the stack and INT is called. We can use this call to write unfiltered bytes to a memory address of our choice. Jumping straight to address 0x4654 will let us assign the second and third argument from our buffer overflow. I chose to write to address 0x3030 which is currently unused and will get past the filter.
 
-`getsn(0x2, 0x3030, 0x3030)`
+`INT(0x2, 0x3030, 0x3030)`
 
 Then we need to jump to address 0x3030 where our shellcode will open the door. A visual of the stack can be seen below.
 
