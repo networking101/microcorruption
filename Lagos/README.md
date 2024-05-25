@@ -1,5 +1,9 @@
 # Lagos
 ## TLDR
+Only alphanumeric values are accepted from user input.  
+The program is vulnerable to a stack buffer overflow.  
+Jump to getsn function to read unfiltered bytes from user.  
+Write and execute shellcode instructions that will call interrupt 0x7f.  
 
 ## Details
 The LockIT Pro c.04  is the first of a new series  of locks. It is
@@ -44,12 +48,40 @@ Start at login.
 
 ![login](./screenshots/login.png)
 
-Our getsn reads 0x200 bytes from the user. Plenty to overflow the return address. Here we can also see the code that checks our input bytes. It doesn't seem to have any vulnerabilities.
+The call to getsn reads 0x200 bytes from the user. This is plenty to overflow the return address. Here we can also see the code that checks our input bytes. It doesn't seem to have any vulnerabilities.
 
 Take a look at the getsn function.
 
 ![getsn](./screenshots/getsn.png)
 
+This function is reachable with alphanumeric bytes in our buffer overflow. When this function is called, r14, r15, and the 0x2 interrupt will be pushed to the stack and INT is called. We can use this call to write unfiltered bytes to a memory address of our choice. Jumping straight to address 0x4654 will let us assign the second and third argument from our buffer overflow. I chose to write to address 0x3030 which is currently unused and will get past the filter.
+
+`getsn(0x2, 0x3030, 0x3030)`
+
+Then we need to jump to address 0x3030 where our shellcode will open the door. A visual of the stack can be seen below.
+
+```
+         STACK
+         ------
+$sp + 2  |4141| junk
+          ....
+$sp + 12 |5446| ROP gadget #1 (0x196 bytes after memory leak)
+$sp + 14 |3030| getsn arg 1 (buf)
+$sp + 16 |3030| getsn arg 2 (size)
+$sp + 18 |3030| ROP gadget #2 (jump to shellcode)
+        -----
+```
+
+![input](./screenshots/input.png)
+
+It works! Now we need to provide shellcode which will be stored to address 0x3030. Use the shellcode we generated from [Bangalore](https://github.com/networking101/microcorruption/tree/main/Bangalore).
+
+`0x324000ffb0121000`
+
+We can see the shellcode stored to memory right before we return to address 0x3030.
+
+![memory](./screenshots/memory.png)
+
 ## Answer
-Password:   (hex) 41414141414141414141414141414141415446303030303030
+Password: (hex) 41414141414141414141414141414141415446303030303030  
 Next input: (hex) 324000ffb0121000
