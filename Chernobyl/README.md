@@ -50,18 +50,18 @@ The hash table starts at heap address 0x5006. It starts out with 8 indexes and e
 
 When a new entry is added to an index, the entry point will start at the first unused address in the index. The first 15 bytes of the username will be stored first, followed by a null character, and then the pin converted to hex. The total size of 1 entry is 18 bytes. The username cannot contain a null byte or space (0x20).
 
-The hash value is calculated using each index of the username. The hash function is pretty easy to predict as the rightmost character has the most influence on the hash, and the hash is modded by the number of indexes. For example, usernames "AAAAA" and "AAAAI" will be put in the same index because `hex("A") % hash table size` is equal to `hex("I") % hash table size`. In short, we only need to adjust the right character by at most 8 (until the hash table resizes) to find the correct index.
+The hash value is calculated using each index of the username. The hash function is pretty easy to predict as the rightmost character has the most influence on the hash. The index assigned is the hash mod the number of indexes. For example, usernames "AAAAA" and "AAAAI" will be put in the same index because `hex("A") % hash table size` is equal to `hex("I") % hash table size`. In short, we only need to adjust the right character by at most 8 (until the hash table resizes) to find the correct index.
 
 Looking at the user input handler, only the first character is checked. One option is "a" with size 6 which we know correlates to "access". The other option is "n" with size 3. I assume this means "new" which is a pretty good guess since this option adds a new entry to the hash table. When the access command finds a correct user name and pin, we get the response "Access granted; but account not activated".
 
-There is a walk function that doesn't appear to be called. I didn't bother finding out what it does. The get_from_table function works as expected and in depth knowledge is not needed to exploit this program.
+There is a walk function that doesn't appear to be called. I didn't bother finding out what it does. The get_from_table function works as expected and in-depth knowledge is not needed to exploit this program.
 
 Before we move on, make sure everything above makes sense. If anything isn't clear, take the time to fully reverse this program and understand what each function does. Complete knowledge is necessary to craft a working exploit.
 
 ## Solution
-Now that we know how the program works, we can move onto exploitation. From the explanation above it is clear a heap overflow exists in the hash table. Each index can only store 5 entries but we can add 11 entries before the hash table expands. The heap buffers are contiguous so an overflow of one buffer will overwrite the previous pointer, next pointer, and size of the next heap buffer. See [Algiers](https://github.com/networking101/microcorruption/tree/main/Algiers) for an explaination on how the heap is managed.
+Now that we know how the program works, we can move onto exploitation. From the explanation above it is clear a heap overflow exists in the hash table. Each index can only store 5 entries but we can add 11 entries before the hash table expands. The heap buffers are contiguous so an overflow of one buffer will overwrite the previous pointer, next pointer, and size of the next heap buffer. See [Algiers](https://github.com/networking101/microcorruption/tree/main/Algiers) for an explanation on how the heap is managed.
 
-So we need 6 entries in the same hash table index to overwrite the pointers and size of the next buffer. It turns out that the same username and pin can be sent if the username is at least 16 characters long. Lets start by overwritting a heap buffer's metadata. Send `new AAAAAAAAAAAAAAAA 0` 6 times.
+So, we need 6 entries in the same hash table index to overwrite the pointers and size of the next buffer. It turns out that the same username and pin can be sent if the username is at least 16 characters long. Let's start by overwriting a heap buffer's metadata. Send `new AAAAAAAAAAAAAAAA 0` 6 times.
 
 ![prompt](./screenshots/prompt.png)
 ![memory](./screenshots/memory.png)
@@ -85,7 +85,7 @@ Now rehash should be recalled and we can get to the call to free.
 
 Uh oh. We caused the program to abort. It seemed to think the heap was exhausted. This should only happen when trying to allocate a new block of memory. Let's backtrace and see where the error happened.
 
-The error happended on the first call to malloc in rehash (address 0x490a). It looks like the malloc function will move along the linked list of blocks on the heap to check for unallocated regions large enough to allocate the needed size. If any of the next pointers point to a lower address than the current block, the program throws an error. Fortunately the malloc function doesn't check backwards using the previous nodes of the linked list. This is easy to fix. We just need to maintain the integrity of the forward linked list chain. The value of the next pointer was 0x50fc before we overwrote it. When we add it to our 6th entry, the exploit now looks like this:
+The error happened on the first call to malloc in rehash (address 0x490a). It looks like the malloc function will move along the linked list of blocks on the heap to check for unallocated regions large enough to allocate the needed size. If any of the next pointers point to a lower address than the current block, the program throws an error. Fortunately, the malloc function doesn't check backwards using the previous nodes of the linked list. This is easy to fix. We just need to maintain the integrity of the forward linked list chain. The value of the next pointer was 0x50fc before we overwrote it. When we add it to our 6th entry, the exploit now looks like this:
 
 ```
 new AAAAAAAAAAAAAAAA 0
@@ -117,7 +117,7 @@ Like I mentioned in the Program Structure section, we only have 8 indexes in our
 
 ![memory3](./screenshots/memory3.png)
 
-We found it. Now lets attempt to overflow the heap and get to the free call.
+We found it. Now let's attempt to overflow the heap and get to the free call.
 
 ```
 new AAAAAAAAAAAAAAAA 0
@@ -166,7 +166,7 @@ new G 0
 (hex) 42424242 324000ffb0121000
 ```
 
-Now to add the address to point to the run function's return address. From Algiers, we know that the free command will try to combine contiguious unallocated blocks of memory so larger blocks can be allocated for future use. This is how the unlink exploit lets us write data to a memory region of our choice. We cannot combine the block forward becuase the next pointer is needed for the malloc call that we had to address earlier. We will need abuse the previous pointer field. The field that will contain our new return address the size in the heap block metadata. This means we want to point the previous address to 0x43f2, 4 bytes before the return address back to main. When we update the 6th entry we also need to generate a hash value that puts our block in the correct location. This time the spare byte is 0x45. Our new exploit will look like this:
+Now to add the address to point to the run function's return address. From Algiers, we know that the free command will try to combine contiguous  unallocated blocks of memory so larger blocks can be allocated for future use. This is how the unlink exploit lets us write data to a memory region of our choice. We cannot combine the block forward because the next pointer is needed for the malloc call that we had to address earlier. We will need abuse the previous pointer field. The field that will contain our new return address the size in the heap block metadata. This means we want to point the previous address to 0x43f2, 4 bytes before the return address back to main. When we update the 6th entry, we also need to generate a hash value that puts our block in the correct location. This time the spare byte is 0x45. Our new exploit will look like this:
 
 ```
 new AAAAAAAAAAAAAAAA 0
@@ -195,7 +195,7 @@ The last step is to write the correct value to the return address. We see that w
 0x3df0 - (0x89e0 - 0x4141) = 0xf551
 ```
 
-To get the right jump value, we need to provide 0xf551. Lets add it to our exploit. This time when we calculate the spare byte we get 0x41.
+To get the right jump value, we need to provide 0xf551. Let's add it to our exploit. This time when we calculate the spare byte, we get 0x41.
 
 ```
 new AAAAAAAAAAAAAAAA 0
