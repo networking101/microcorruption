@@ -59,7 +59,7 @@ There is a walk function that doesn't appear to be called. I didn't bother findi
 Before we move on, make sure everything above makes sense. If anything isn't clear, take the time to fully reverse this program and understand what each function does. Complete knowledge is necessary to craft a working exploit.
 
 ## Solution
-Now that we know how the program works, we can move onto exploitation. From the explanation above it is clear a heap overflow exists in the hash table. Each index can only store 5 entries but we can add 11 entries before the hash table expands. The heap buffers are contiguous so an overflow of one buffer will overwrite the previous pointer, next pointer, and size of the next heap buffer. See [Addis Ababa](https://github.com/networking101/microcorruption/tree/main/Addis%20Ababa) for an explaination on how the heap is managed.
+Now that we know how the program works, we can move onto exploitation. From the explanation above it is clear a heap overflow exists in the hash table. Each index can only store 5 entries but we can add 11 entries before the hash table expands. The heap buffers are contiguous so an overflow of one buffer will overwrite the previous pointer, next pointer, and size of the next heap buffer. See [Algiers](https://github.com/networking101/microcorruption/tree/main/Algiers) for an explaination on how the heap is managed.
 
 So we need 6 entries in the same hash table index to overwrite the next allocated buffers pointers and size. It turns out that the same username and pin can be sent if the username is at least 16 characters long. Lets start by overwritting a heap buffer's metadata. Send `new AAAAAAAAAAAAAAAA 0` 6 times.
 
@@ -146,6 +146,7 @@ Take a look at the end of the run function.
 
 If the user command is not "access" or "new", the function will jump to address 0x4cbe and return from the run function. The return address is stored at address 0x43f6 on the stack. This is what we want to overwrite. To get here we just need to provide a user input where the first character is not "a" or "n". Then we can include our shellcode, and use the overwritten return address to return to the unlock door instructions on the stack. Use the shellcode from [Bangalore](https://github.com/networking101/microcorruption/tree/main/Bangalore).
 
+`0x324000ffb0121000`
 
 With this new step added, our exploit will look like this.
 
@@ -165,9 +166,37 @@ new G 0
 (hex) 42424242 324000ffb0121000
 ```
 
+Now to add the address to point to the run functions return address. From Algiers, we know that the free command will try to combine contiguious unallocated blocks of memory so larger blocks can be allocated for future use. This is how the unlink exploit lets us write data to a memory region of our choice. We cannot combine the block forward becuase the next pointer is needed for the malloc call that we had to address earlier. We will need abuse the previous pointer. The field we will overwrite is the size in the heap block metadata. This means we want to point the previous address to 0x43f2, 4 bytes before the return address back to main. When we update the entry we also need to generate a hash value that puts our block in the correct location. This time the spare byte is 0x45. Our new exploit will look like this:
 
+```
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+(hex) 6e657720 f243 fc50 4141 45 2030
+new B 0
+new C 0
+new D 0
+new E 0
+new F 0
+new G 0
+(hex) 42424242 324000ffb0121000
+```
 
+![prompt2](./screenshots/prompt2.png)
+![memory4](./screenshots/memory4.png)
 
+We got it! The return address is overwritten.
+
+The last step is to write the correct value to the return address. Here we want to jump to our shellcode on the stack at address 0x3df0. To unlink, the free function will combine the sizes of both blocks, plus 6 bytes for the heap block metadata. Then this value will be written to address 0x43f6. We need to do some math here.
+
+```
+new return value = 6 + old return value + value at address 0x50a0
+0x3df0 = 6 + 0x443e + value at address 0x50a0
+```
+
+To get the right jump value, we need to provide 0xf551
 
 * available commands are "access" and "new". Anything else will cause run function to return and exit program
 * The hash table is stored on the heap
